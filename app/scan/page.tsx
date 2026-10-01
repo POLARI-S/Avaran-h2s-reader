@@ -98,7 +98,7 @@ export default function ScanPage() {
     setResult(record);
 
     if (dA < 0) {
-      setWarning("Worker patch reads lighter than the reference — check the taps and the lighting.");
+      setWarning("Worker patch shows less change than the reference — check the taps and the lighting.");
     } else if (doseResult.saturated) {
       setWarning("Patch is saturated — the true dose is at least this value.");
     } else if (doseResult.extrapolated) {

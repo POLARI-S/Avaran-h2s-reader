@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { NavTabs } from "@/components/NavTabs";
+import { Footer } from "@/components/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,13 +48,12 @@ export default function RootLayout({
             </div>
             <div>
               <h1 className="text-lg leading-tight font-bold">H₂S Dose Reader</h1>
-              <p className="text-[12.5px] text-muted-foreground">
-                Passive wristband scanner · Team AVARAN · SIH26118
-              </p>
+              <p className="text-[12.5px] text-muted-foreground">Passive H₂S dosimeter · Team AVARAN</p>
             </div>
           </header>
           <NavTabs />
           <main className="pb-4">{children}</main>
+          <Footer />
         </div>
       </body>
     </html>

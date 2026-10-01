@@ -28,7 +28,7 @@ async function tapCanvasAt(page: Page, fx: number, fy: number) {
 test.describe("Dashboard", () => {
   test("shows the empty state with no scans yet", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("No scans yet.")).toBeVisible();
+    await expect(page.getByText("No scans yet")).toBeVisible();
     await page.screenshot({ path: "docs/screens/dashboard-empty.png" });
   });
 });
@@ -89,7 +89,7 @@ test.describe("Tap order", () => {
     await tapCanvasAt(page, 960 / 1200, 250 / 800); // 3: reference (wrong — should be worker patch)
 
     await page.getByRole("button", { name: "Analyse" }).click();
-    await expect(page.getByTestId("result-warning")).toContainText(/lighter than the reference/i);
+    await expect(page.getByTestId("result-warning")).toContainText(/less change than the reference/i);
   });
 });
 

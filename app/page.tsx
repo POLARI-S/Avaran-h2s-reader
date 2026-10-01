@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Camera, ScanLine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
@@ -11,7 +12,7 @@ import { BandLegend } from "@/components/BandLegend";
 import { loadHistory } from "@/lib/history";
 import { loadCalibration } from "@/lib/calibration";
 import { loadStandard } from "@/lib/settings";
-import { classify, STANDARDS } from "@/lib/dose";
+import { BAND_META, classify, STANDARDS } from "@/lib/dose";
 import type { ScanRecord } from "@/lib/types";
 import type { StandardKey } from "@/lib/dose";
 
@@ -37,22 +38,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3.5">
-      <Card>
+      <Card
+        className="border-l-4"
+        style={{ borderLeftColor: band ? BAND_META[band].color : "var(--primary)" }}
+      >
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Latest shift reading
-            </CardTitle>
-            <StatusPill band={band} />
+            <CardTitle className="text-sm font-semibold text-foreground">Latest shift reading</CardTitle>
+            {band && <StatusPill band={band} />}
           </div>
         </CardHeader>
         <CardContent>
           {!last ? (
-            <p className="py-3 text-center text-sm text-muted-foreground">
-              No scans yet.
-              <br />
-              Scan a worker&apos;s patch at the end of the shift.
-            </p>
+            <div className="flex flex-col items-center gap-1.5 py-4 text-center">
+              <ScanLine className="size-8 text-muted-foreground" strokeWidth={1.75} />
+              <p className="text-base font-semibold">No scans yet</p>
+              <p className="text-sm text-muted-foreground">Scan a worker&apos;s patch at the end of the shift</p>
+            </div>
           ) : (
             <div>
               <p className="text-center text-sm text-muted-foreground">
@@ -68,7 +70,8 @@ export default function DashboardPage() {
             nativeButton={false}
             className="mt-3.5 h-11 w-full text-[15px] font-bold"
           >
-            📷 Scan a patch
+            <Camera className="size-4" strokeWidth={1.75} />
+            Scan a patch
           </Button>
         </CardContent>
       </Card>
@@ -86,7 +89,12 @@ export default function DashboardPage() {
               <span className="text-xs text-muted-foreground">patches scanned</span>
             </div>
             <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
-              <b className="block text-[22px] tabular-nums">{overToday}</b>
+              <b
+                className="block text-[22px] tabular-nums"
+                style={overToday > 0 ? { color: BAND_META["OVER LIMIT"].color } : undefined}
+              >
+                {overToday}
+              </b>
               <span className="text-xs text-muted-foreground">above shift limit</span>
             </div>
           </div>

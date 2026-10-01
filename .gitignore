@@ -28,6 +28,9 @@
 .DS_Store
 *.pem
 
+# not part of the app — local notes/plan docs saved alongside the project
+/Claude outputs/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

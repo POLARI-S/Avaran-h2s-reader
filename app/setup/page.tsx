@@ -155,7 +155,7 @@ export default function SetupPage() {
           <p className="mb-2 text-xs text-muted-foreground">
             From the lab fit: ΔA = A · (1 − e<sup>−k·D</sup>). Paste the two numbers from{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-[12.5px]">model_params.json</code>, or import the
-            file.
+            file. ΔA is whichever colour measure the lab fit chose (e.g. yellowness loss).
           </p>
           <div className="grid grid-cols-2 gap-2.5">
             <div>
