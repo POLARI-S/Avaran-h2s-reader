@@ -52,7 +52,7 @@ export default function RootLayout({
             </div>
           </header>
           <NavTabs />
-          <main className="pb-4">{children}</main>
+          <main className="pt-3 pb-4">{children}</main>
           <Footer />
         </div>
       </body>

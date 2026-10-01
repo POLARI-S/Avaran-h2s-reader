@@ -38,10 +38,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3.5">
-      <Card
-        className="border-l-4"
-        style={{ borderLeftColor: band ? BAND_META[band].color : "var(--primary)" }}
-      >
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold text-foreground">Latest shift reading</CardTitle>
