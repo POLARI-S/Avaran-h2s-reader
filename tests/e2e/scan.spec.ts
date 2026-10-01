@@ -147,6 +147,30 @@ test.describe("Setup", () => {
     await expect(page.getByText(/could not import/i)).toBeVisible();
     await expect(page.getByText(/langmuir/i)).toBeVisible();
   });
+
+  test("importing a dYel calibration file sets the channel to yellowness loss, not luminance", async ({
+    page,
+  }) => {
+    await page.goto("/setup/");
+    await page.locator("#jsonIn").setInputFiles({
+      name: "model_params.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ params: [0.85, 0.02], metric: "dYel", dose_max: 50 })),
+    });
+    await expect(page.getByText(/imported: a=/i)).toBeVisible();
+    await expect(page.getByRole("combobox").nth(1)).toContainText(/yellowness loss/i);
+  });
+
+  test("importing an unrecognised metric is rejected with a message", async ({ page }) => {
+    await page.goto("/setup/");
+    await page.locator("#jsonIn").setInputFiles({
+      name: "model_params.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ params: [0.9, 0.03], metric: "dSomethingElse" })),
+    });
+    await expect(page.getByText(/could not import/i)).toBeVisible();
+    await expect(page.getByText(/unknown metric/i)).toBeVisible();
+  });
 });
 
 test.describe("No forbidden live-reading language", () => {

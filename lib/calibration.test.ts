@@ -16,10 +16,31 @@ describe("parseModelParams", () => {
     expect(cal.doseMax).toBe(55);
   });
 
-  it("maps metric suffixes to the right channel", () => {
+  it("maps metric names to the right channel", () => {
     expect(parseModelParams({ params: [0.9, 0.03], metric: "dA_R" }).channel).toBe("r");
     expect(parseModelParams({ params: [0.9, 0.03], metric: "dA_G" }).channel).toBe("g");
     expect(parseModelParams({ params: [0.9, 0.03], metric: "dA_L" }).channel).toBe("l");
+  });
+
+  it("maps dYel to channel y (not Luminance, despite ending in 'l')", () => {
+    const cal = parseModelParams({ params: [0.9, 0.03], metric: "dYel" });
+    expect(cal.channel).toBe("y");
+  });
+
+  it("maps dE to channel e", () => {
+    const cal = parseModelParams({ params: [0.9, 0.03], metric: "dE" });
+    expect(cal.channel).toBe("e");
+  });
+
+  it("maps dKM_G to channel kg", () => {
+    const cal = parseModelParams({ params: [0.9, 0.03], metric: "dKM_G" });
+    expect(cal.channel).toBe("kg");
+  });
+
+  it("throws on an unrecognised metric instead of silently defaulting", () => {
+    expect(() => parseModelParams({ params: [0.9, 0.03], metric: "dSomethingElse" })).toThrow(
+      CalibrationImportError,
+    );
   });
 
   it("rejects a file whose model is not saturating_exponential, with a clear message", () => {

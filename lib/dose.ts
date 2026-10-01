@@ -4,7 +4,11 @@
  * lab fit (fit_model.py): sRGB -> linear -> darkening vs reference -> dose -> TWA.
  */
 
-export type Channel = "r" | "g" | "b" | "l";
+// r/g/b/l: plain log-ratio darkening on that channel.
+// kr/kg/kb/kl: Kubelka-Munk transform of the same four channels.
+// y: yellowness loss (Δb* in CIE Lab, reference minus patch).
+// e: total colour change (ΔE, CIE76 distance in Lab).
+export type Channel = "r" | "g" | "b" | "l" | "kr" | "kg" | "kb" | "kl" | "y" | "e";
 
 export type Lin = { r: number; g: number; b: number; l: number };
 
@@ -28,6 +32,45 @@ export type Band = "SAFE" | "CAUTION" | "OVER LIMIT" | "HIGH";
 export type Classification = { band: Band; frac: number };
 
 const EPS = 1e-6;
+
+const km = (R: number): number => {
+  const r = Math.min(Math.max(R, 1e-4), 0.9999);
+  return (1 - r) ** 2 / (2 * r);
+};
+
+// Reflectance of a sample's channel relative to the white-card reference —
+// this is how lighting differences between photos cancel out, the same way
+// they already do for the plain r/g/b/l darkening channels below.
+const refl = (sample: Lin, white: Lin, ch: "r" | "g" | "b" | "l"): number =>
+  Math.max(sample[ch], EPS) / Math.max(white[ch], EPS);
+
+type Lab = { L: number; a: number; b: number };
+
+// sRGB-primary linear RGB -> XYZ (D65) -> CIE Lab, with the white-card patch
+// itself as the white point (per-channel reflectance normalisation above).
+function toLab(sample: Lin, white: Lin): Lab {
+  const rn = refl(sample, white, "r");
+  const gn = refl(sample, white, "g");
+  const bn = refl(sample, white, "b");
+
+  const X = 0.4124 * rn + 0.3576 * gn + 0.1805 * bn;
+  const Y = 0.2126 * rn + 0.7152 * gn + 0.0722 * bn;
+  const Z = 0.0193 * rn + 0.1192 * gn + 0.9505 * bn;
+
+  // D65 reference white, Y normalised to 1.
+  const Xn = 0.95047;
+  const Yn = 1.0;
+  const Zn = 1.08883;
+
+  const d = 6 / 29;
+  const f = (t: number): number => (t > d ** 3 ? Math.cbrt(t) : t / (3 * d * d) + 4 / 29);
+
+  const fx = f(X / Xn);
+  const fy = f(Y / Yn);
+  const fz = f(Z / Zn);
+
+  return { L: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) };
+}
 
 // 1. sRGB byte -> linear
 export const srgbToLinear = (c255: number): number => {
@@ -62,8 +105,21 @@ export function sampleLinearRGB(pixels: Uint8ClampedArray): Lin {
 
 // 3. Darkening relative to the reference patch, normalised by the white reference.
 export function darkening(white: Lin, reference: Lin, patch: Lin, ch: Channel): number {
-  const refRatio = Math.max(reference[ch], EPS) / Math.max(white[ch], EPS);
-  const patchRatio = Math.max(patch[ch], EPS) / Math.max(white[ch], EPS);
+  if (ch === "y") {
+    return toLab(reference, white).b - toLab(patch, white).b;
+  }
+  if (ch === "e") {
+    const A = toLab(reference, white);
+    const B = toLab(patch, white);
+    return Math.hypot(A.L - B.L, A.a - B.a, A.b - B.b);
+  }
+  if (ch.length === 2 && ch[0] === "k") {
+    const base = ch[1] as "r" | "g" | "b" | "l";
+    return km(refl(patch, white, base)) - km(refl(reference, white, base));
+  }
+  const base = ch as "r" | "g" | "b" | "l";
+  const refRatio = refl(reference, white, base);
+  const patchRatio = refl(patch, white, base);
   return -Math.log10(Math.max(patchRatio, EPS) / Math.max(refRatio, EPS));
 }
 

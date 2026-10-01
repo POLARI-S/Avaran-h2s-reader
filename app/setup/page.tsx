@@ -19,7 +19,18 @@ import {
 } from "@/lib/calibration";
 import { loadBoxPct, loadStandard, saveBoxPct, saveStandard } from "@/lib/settings";
 
-const CHANNEL_LABELS: Record<Channel, string> = { r: "Red", g: "Green", b: "Blue", l: "Luminance" };
+const CHANNEL_LABELS: Record<Channel, string> = {
+  r: "Red (darkening)",
+  g: "Green (darkening)",
+  b: "Blue (darkening)",
+  l: "Luminance (darkening)",
+  kr: "Red (Kubelka-Munk)",
+  kg: "Green (Kubelka-Munk)",
+  kb: "Blue (Kubelka-Munk)",
+  kl: "Luminance (Kubelka-Munk)",
+  y: "Yellowness loss (Δb*)",
+  e: "Total colour change (ΔE)",
+};
 
 export default function SetupPage() {
   const [loaded, setLoaded] = useState(false);

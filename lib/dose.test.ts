@@ -86,6 +86,40 @@ describe("darkening", () => {
   });
 });
 
+describe("darkening — Lab-based metrics", () => {
+  const white: Lin = { r: 0.8, g: 0.8, b: 0.8, l: 0.8 };
+
+  it("dYel is positive when the patch loses yellowness relative to the reference", () => {
+    const reference: Lin = { r: 0.6, g: 0.55, b: 0.2, l: 0.5 };
+    const patch: Lin = { r: 0.6, g: 0.58, b: 0.5, l: 0.56 };
+    expect(darkening(white, reference, patch, "y")).toBeGreaterThan(0);
+  });
+
+  it("dE is zero when patch equals reference", () => {
+    const sample: Lin = { r: 0.5, g: 0.5, b: 0.4, l: 0.48 };
+    expect(darkening(white, sample, sample, "e")).toBeCloseTo(0, 6);
+  });
+
+  it("dE is positive for a changed patch", () => {
+    const reference: Lin = { r: 0.6, g: 0.55, b: 0.2, l: 0.5 };
+    const patch: Lin = { r: 0.6, g: 0.58, b: 0.5, l: 0.56 };
+    expect(darkening(white, reference, patch, "e")).toBeGreaterThan(0);
+  });
+
+  it("Kubelka-Munk channel kb moves the same direction as plain darkening b for a darkening patch", () => {
+    const reference: Lin = { r: 0.6, g: 0.6, b: 0.6, l: 0.6 };
+    const patch: Lin = { r: 0.6, g: 0.6, b: 0.3, l: 0.5 };
+    expect(darkening(white, reference, patch, "b")).toBeGreaterThan(0);
+    expect(darkening(white, reference, patch, "kb")).toBeGreaterThan(0);
+  });
+
+  it("Kubelka-Munk channel is zero when patch equals reference", () => {
+    const sample: Lin = { r: 0.5, g: 0.5, b: 0.4, l: 0.48 };
+    expect(darkening(white, sample, sample, "kb")).toBeCloseTo(0, 9);
+    expect(darkening(white, sample, sample, "kl")).toBeCloseTo(0, 9);
+  });
+});
+
 describe("twa", () => {
   it("divides dose by shift hours", () => {
     expect(twa(8, 8)).toBe(1);
