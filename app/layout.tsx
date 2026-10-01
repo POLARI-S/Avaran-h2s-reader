@@ -43,8 +43,8 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <div className="mx-auto max-w-[560px] px-4 pt-3 pb-24">
           <header className="flex items-center gap-3 py-1.5 pb-3">
-            <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-[15px] leading-none font-extrabold tracking-tight text-primary-foreground">
-              H2S
+            <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-[15px] font-extrabold tracking-tight text-primary-foreground">
+              H₂S
             </div>
             <div>
               <h1 className="text-lg leading-tight font-bold">H₂S Dose Reader</h1>
@@ -52,7 +52,7 @@ export default function RootLayout({
             </div>
           </header>
           <NavTabs />
-          <main className="pt-2 pb-4">{children}</main>
+          <main className="pt-3 pb-4">{children}</main>
           <Footer />
         </div>
       </body>
