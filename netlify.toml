@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

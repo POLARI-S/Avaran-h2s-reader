@@ -1,0 +1,37 @@
+// Minimal app-shell service worker: stale-while-revalidate for same-origin
+// GET requests, so the app keeps working offline after the first visit to
+// each screen. No backend in Phase 1, so there is nothing else to sync.
+const CACHE = "avaran-shell-v1";
+
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(request);
+      const network = fetch(request)
+        .then((response) => {
+          if (response.ok) cache.put(request, response.clone());
+          return response;
+        })
+        .catch(() => cached);
+      return cached || network;
+    }),
+  );
+});
