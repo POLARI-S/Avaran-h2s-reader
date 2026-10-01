@@ -19,6 +19,7 @@ import {
 import { clearHistory, loadHistory } from "@/lib/history";
 import { loadStandard } from "@/lib/settings";
 import { STANDARDS, classify, type StandardKey } from "@/lib/dose";
+import { csvCell } from "@/lib/csv";
 import type { ScanRecord } from "@/lib/types";
 
 export default function RecordsPage() {
@@ -53,7 +54,9 @@ export default function RecordsPage() {
         h.standard,
         h.demo,
         h.provisional,
-      ].join(","),
+      ]
+        .map(csvCell)
+        .join(","),
     );
     const blob = new Blob([head + "\n" + rows.join("\n")], { type: "text/csv" });
     const a = document.createElement("a");

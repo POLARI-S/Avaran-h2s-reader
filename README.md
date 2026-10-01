@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# H₂S Dose Reader
 
-## Getting Started
+Phone app for the AVARAN passive H₂S dosimeter wristband — Smart India Hackathon 2026, problem statement **SIH26118** (MRPL).
 
-First, run the development server:
+All rights reserved, Team AVARAN. No open-source license has been chosen yet.
+
+## Screenshots
+
+| Dashboard | Scan | Records | Setup |
+|---|---|---|---|
+| ![Dashboard](docs/screens/dashboard-empty.png) | ![Scan](docs/screens/scan-result.png) | ![Records](docs/screens/records.png) | ![Setup](docs/screens/setup.png) |
+
+## How it works
+
+The wristband carries a silver-nanoparticle patch that has no battery and no electronics. Over a shift, the patch reacts with ambient H₂S (2Ag + H₂S → Ag₂S) and **fades from yellow to grey** — the colour change is proportional to the worker's cumulative exposure.
+
+At the end of the shift, a supervisor photographs the patch cartridge alongside a white reference card and a sealed (unexposed) reference patch. The app measures the colour change between the reference and the worker's patch, runs it through a calibration curve fitted in the lab, and converts it into:
+
+- **Dose** (ppm·h) — the cumulative H₂S exposure over the shift
+- **TWA** (ppm) — dose ÷ shift hours, the 8-hour time-weighted average
+
+The TWA is compared against a configurable exposure standard (ACGIH TLV, 1 ppm, or the Indian Factories Act 1948, 10 ppm) and classified as SAFE, CAUTION, OVER LIMIT, or HIGH.
+
+The app never shows a live or instantaneous reading — only cumulative dose and TWA, consistent with how the physical device actually works.
+
+## Features
+
+- **3-tap scan**: tap the white card, reference patch, and worker patch on a photo; the app samples and computes dose/TWA on-device.
+- **Demo images**: Safe/Caution/Over-limit buttons generate a synthetic patch photo by running the *actual* calibration forward, so the demo exercises the real analysis pipeline rather than showing a fabricated result. Demo scans are labelled "demo" everywhere they appear.
+- **Records**: a running log of scans with CSV export.
+- **Calibration import**: load `model_params.json` from the lab fit script, supporting all 10 colour metrics it can produce (plain darkening and Kubelka-Munk on R/G/B/Luminance, yellowness loss, and total colour change ΔE).
+- **Offline PWA**: installable, works after the first load with no network connection — built for plant floors with poor signal.
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm test         # unit tests (Vitest)
+npm run build    # static export to out/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Static export hosted on Netlify. `netlify.toml` builds with `npm run build` and publishes `out/`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Status
 
-## Learn More
+**Prototype.** Calibration is **provisional** until laboratory validation is complete (shown in-app until turned off). This is not a certified safety instrument — do not use it as the sole basis for worker-safety decisions.
 
-To learn more about Next.js, take a look at the following resources:
+## Privacy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+All data — scans, calibration, records — stays in the browser's `localStorage` on the device. Nothing is uploaded; there is no backend or analytics in this version.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Team
 
-## Deploy on Vercel
+Team AVARAN, Amity University Noida.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Known issues
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm audit` flags one high/moderate advisory in `postcss`, a transitive dependency of Next.js. It only runs at build time against our own known CSS, never against visitor input (the site is a static export), so the practical risk is very low. The suggested fix upgrades to Next.js 16, a breaking change we're deferring until after the hackathon submission.
