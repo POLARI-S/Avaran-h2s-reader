@@ -63,7 +63,11 @@ export default function DashboardPage() {
               <ResultCard record={last} limitPpm={limitPpm} provisional={provisional} />
             </div>
           )}
-          <Button render={<Link href="/scan/" />} className="mt-3.5 h-11 w-full text-[15px] font-bold">
+          <Button
+            render={<Link href="/scan/" />}
+            nativeButton={false}
+            className="mt-3.5 h-11 w-full text-[15px] font-bold"
+          >
             📷 Scan a patch
           </Button>
         </CardContent>
