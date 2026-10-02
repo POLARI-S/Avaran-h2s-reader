@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { demoTargetTwa, type DemoLevel } from "@/lib/demo";
+import { cn } from "@/lib/utils";
 
 const LEVELS: { level: DemoLevel; label: string }[] = [
   { level: "safe", label: "Safe" },
@@ -10,10 +11,12 @@ const LEVELS: { level: DemoLevel; label: string }[] = [
 export function DemoButtons({
   onSelect,
   limitPpm,
+  selected,
   disabled,
 }: {
   onSelect: (level: DemoLevel) => void;
   limitPpm: number;
+  selected?: DemoLevel | null;
   disabled?: boolean;
 }) {
   return (
@@ -23,9 +26,13 @@ export function DemoButtons({
           key={l.level}
           type="button"
           variant="outline"
+          aria-pressed={selected === l.level}
           disabled={disabled}
           onClick={() => onSelect(l.level)}
-          className="h-auto flex-col gap-0 py-2"
+          className={cn(
+            "h-auto flex-col gap-0 py-2",
+            selected === l.level && "border-primary bg-primary/10 ring-2 ring-primary",
+          )}
         >
           <span>{l.label}</span>
           <span className="text-[11px] font-normal text-muted-foreground">

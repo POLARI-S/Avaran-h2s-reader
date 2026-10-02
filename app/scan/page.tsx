@@ -143,7 +143,11 @@ export default function ScanPage() {
           <Label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
             See a sample wristband patch:
           </Label>
-          <DemoButtons onSelect={pickDemo} limitPpm={limitPpm} />
+          <DemoButtons
+            onSelect={pickDemo}
+            limitPpm={limitPpm}
+            selected={photo?.kind === "demo" ? photo.level : null}
+          />
 
           <Label
             htmlFor="file"
