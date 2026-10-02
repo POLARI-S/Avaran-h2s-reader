@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEFAULT_CAL, STANDARDS, type Calibration, type Channel, type StandardKey } from "@/lib/dose";
 import {
@@ -17,13 +16,12 @@ import {
   saveCalibration,
   validateCalibrationInput,
 } from "@/lib/calibration";
-import { loadBoxPct, loadStandard, saveBoxPct, saveStandard } from "@/lib/settings";
+import { loadStandard, saveStandard } from "@/lib/settings";
 import { CHANNEL_LABELS } from "@/lib/channels";
 
 export default function SetupPage() {
   const [loaded, setLoaded] = useState(false);
   const [std, setStd] = useState<StandardKey>("acgih");
-  const [boxPct, setBoxPct] = useState(5);
   const [message, setMessage] = useState<string | null>(null);
 
   const [aInput, setAInput] = useState(String(DEFAULT_CAL.A));
@@ -40,7 +38,6 @@ export default function SetupPage() {
     setChannel(c.channel);
     setProvisional(c.provisional);
     setStd(loadStandard());
-    setBoxPct(loadBoxPct());
     setLoaded(true);
   }, []);
 
@@ -50,12 +47,6 @@ export default function SetupPage() {
     if (!value) return;
     setStd(value);
     saveStandard(value);
-  };
-
-  const onBoxChange = (value: number | readonly number[]) => {
-    const v = Array.isArray(value) ? value[0] : (value as number);
-    setBoxPct(v);
-    saveBoxPct(v);
   };
 
   const applyCalibration = (next: Calibration) => {
@@ -207,10 +198,6 @@ export default function SetupPage() {
             <Switch checked={provisional} onCheckedChange={setProvisional} />
             Mark readings as provisional
           </label>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            While on, real-photo scans show the measured colour change only (no ppm). Turn off only after lab
-            validation.
-          </p>
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             <Button className="h-11" onClick={onSaveCal}>
               Save calibration
@@ -230,19 +217,6 @@ export default function SetupPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Sample size
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Label className="mb-2 block text-xs font-semibold text-muted-foreground">
-            Measured area around each tap: <span className="text-foreground">{boxPct}</span>% of photo width
-          </Label>
-          <Slider value={[boxPct]} min={2} max={12} step={0.5} onValueChange={onBoxChange} />
-        </CardContent>
-      </Card>
     </div>
   );
 }

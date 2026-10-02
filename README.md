@@ -25,7 +25,8 @@ The app never shows a live or instantaneous reading — only cumulative dose and
 
 ## Features
 
-- **3-tap scan**: tap the white card, reference patch, and worker patch on a photo; the app samples and computes dose/TWA on-device.
+- **Sample patches**: Safe, Caution and Over-limit photos of real AVARAN wristband patches show what each band looks like and the dose/TWA reading it maps to.
+- **Your own photo**: accepted, but the app explains that the calibrated model is still being built (no ppm estimate yet).
 - **Demo images**: Safe/Caution/Over-limit buttons generate a synthetic patch photo by running the *actual* calibration forward, so the demo exercises the real analysis pipeline rather than showing a fabricated result. Demo scans are labelled "demo" everywhere they appear.
 - **Records**: a running log of scans with CSV export.
 - **Calibration import**: load `model_params.json` from the lab fit script, supporting all 10 colour metrics it can produce (plain darkening and Kubelka-Munk on R/G/B/Luminance, yellowness loss, and total colour change ΔE).

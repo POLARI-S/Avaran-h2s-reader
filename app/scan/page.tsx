@@ -1,82 +1,54 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Camera, Layers, Ruler, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Camera, FlaskConical } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DemoButtons } from "@/components/DemoButtons";
-import { ModeChooser, type ScanMode } from "@/components/ModeChooser";
-import { TapCanvas, type TapCanvasHandle } from "@/components/TapCanvas";
-import { ResultCard } from "@/components/ResultCard";
-import { CalibrationPendingCard } from "@/components/CalibrationPendingCard";
-import { StatusPill } from "@/components/StatusPill";
-import { generateDemoImage, type DemoLevel } from "@/lib/demo";
-import { loadCalibration } from "@/lib/calibration";
-import { loadBoxPct, loadStandard } from "@/lib/settings";
-import { appendRecord } from "@/lib/history";
-import { isPendingResult } from "@/lib/pending";
 import {
-  DEFAULT_CAL,
-  STANDARDS,
-  classify,
-  darkening,
-  doseFromDarkening,
-  twa,
-  type Calibration,
-  type StandardKey,
-} from "@/lib/dose";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DemoButtons } from "@/components/DemoButtons";
+import { ResultCard } from "@/components/ResultCard";
+import { StatusPill } from "@/components/StatusPill";
+import { DEMO_PHOTOS, demoTargetTwa, type DemoLevel } from "@/lib/demo";
+import { loadCalibration } from "@/lib/calibration";
+import { loadStandard } from "@/lib/settings";
+import { appendRecord } from "@/lib/history";
+import { DEFAULT_CAL, STANDARDS, classify, darkeningFromDose, type Calibration, type StandardKey } from "@/lib/dose";
 import type { ScanRecord } from "@/lib/types";
 
-type Tap = { x: number; y: number };
+// Either a sample patch photo (with a known exposure level) or the user's own photo.
+type Photo = { kind: "demo"; level: DemoLevel; url: string } | { kind: "own"; url: string };
 
 export default function ScanPage() {
-  const [mode, setMode] = useState<ScanMode | null>(null);
   const [workerId, setWorkerId] = useState("");
   const [hours, setHours] = useState(8);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isDemo, setIsDemo] = useState(false);
-  const [initialTaps, setInitialTaps] = useState<[Tap, Tap, Tap] | undefined>();
-  const [tapCount, setTapCount] = useState(0);
+  const [photo, setPhoto] = useState<Photo | null>(null);
   const [cal, setCal] = useState<Calibration>(DEFAULT_CAL);
   const [std, setStd] = useState<StandardKey>("acgih");
-  const [boxPct, setBoxPct] = useState(5);
   const [result, setResult] = useState<ScanRecord | null>(null);
-  const [warning, setWarning] = useState<string | undefined>();
-  const tapRef = useRef<TapCanvasHandle>(null);
+  const [noModelOpen, setNoModelOpen] = useState(false);
 
   useEffect(() => {
     setCal(loadCalibration());
     setStd(loadStandard());
-    setBoxPct(loadBoxPct());
   }, []);
 
   const limitPpm = STANDARDS[std].twa;
 
-  const clearScan = () => {
-    setImageUrl(null);
-    setInitialTaps(undefined);
-    setTapCount(0);
+  const pickDemo = (level: DemoLevel) => {
+    setPhoto({ kind: "demo", level, url: DEMO_PHOTOS[level] });
     setResult(null);
-    setWarning(undefined);
-  };
-
-  const chooseMode = (m: ScanMode) => {
-    if (m === mode) return;
-    clearScan();
-    setIsDemo(m === "demo");
-    setMode(m);
-  };
-
-  const loadDemo = (level: DemoLevel) => {
-    const demo = generateDemoImage(level, limitPpm, hours, cal);
-    setImageUrl(demo.dataUrl);
-    setIsDemo(true);
-    setInitialTaps(demo.taps);
-    setResult(null);
-    setWarning(undefined);
     if (!workerId.trim() || workerId.startsWith("DEMO-")) {
       setWorkerId(`DEMO-${level.toUpperCase()}`);
     }
@@ -85,98 +57,40 @@ export default function ScanPage() {
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageUrl(URL.createObjectURL(file));
-    setIsDemo(false);
-    setInitialTaps(undefined);
+    setPhoto({ kind: "own", url: URL.createObjectURL(file) });
     setResult(null);
-    setWarning(undefined);
     e.target.value = "";
   };
 
   const analyse = () => {
-    const samples = tapRef.current?.sample(boxPct);
-    if (!samples) return;
-    const [white, reference, patch] = samples;
-    const dA = darkening(white, reference, patch, cal.channel);
-
-    if (isPendingResult({ demo: isDemo }, cal)) {
-      // Real photo while calibration is provisional: keep the measurement only.
-      // dose/twa/band are placeholders and are never displayed for pending rows.
-      const pendingRecord: ScanRecord = {
-        id: crypto.randomUUID(),
-        t: Date.now(),
-        worker: (workerId || "UNKNOWN").trim(),
-        hrs: hours,
-        dA: +dA.toFixed(4),
-        dose: 0,
-        twa: 0,
-        band: "SAFE",
-        standard: std,
-        demo: false,
-        saturated: false,
-        extrapolated: false,
-        provisional: true,
-        pending: true,
-        channel: cal.channel,
-      };
-      appendRecord(pendingRecord);
-      setResult(pendingRecord);
-      setWarning(undefined);
+    if (!photo) return;
+    if (photo.kind === "own") {
+      // No validated model yet: explain instead of guessing a ppm value.
+      setNoModelOpen(true);
       return;
     }
-
-    const doseResult = doseFromDarkening(dA, cal);
-    const twaPpm = twa(doseResult.dose, hours);
+    const twaPpm = demoTargetTwa(photo.level, limitPpm);
+    const dose = twaPpm * hours;
     const record: ScanRecord = {
       id: crypto.randomUUID(),
       t: Date.now(),
       worker: (workerId || "UNKNOWN").trim(),
       hrs: hours,
-      dA: +dA.toFixed(4),
-      dose: +doseResult.dose.toFixed(2),
+      dA: +darkeningFromDose(dose, cal).toFixed(4),
+      dose: +dose.toFixed(2),
       twa: +twaPpm.toFixed(3),
       band: classify(twaPpm, limitPpm).band,
       standard: std,
-      demo: isDemo,
-      saturated: doseResult.saturated,
-      extrapolated: doseResult.extrapolated,
+      demo: true,
+      saturated: false,
+      extrapolated: false,
       provisional: cal.provisional,
     };
     appendRecord(record);
     setResult(record);
-
-    if (dA < 0) {
-      setWarning("Worker patch shows less change than the reference — check the taps and the lighting.");
-    } else if (doseResult.saturated) {
-      setWarning("Patch is saturated — the true dose is at least this value.");
-    } else if (doseResult.extrapolated) {
-      setWarning("Beyond the calibrated dose range — treat as approximate.");
-    } else {
-      setWarning(undefined);
-    }
   };
 
-  const band = result && !result.pending ? classify(result.twa, limitPpm).band : null;
-
-  const canvasAndAnalyse = imageUrl && (
-    <>
-      <TapCanvas
-        ref={tapRef}
-        imageUrl={imageUrl}
-        boxPct={boxPct}
-        initialTaps={initialTaps}
-        onTapsChange={setTapCount}
-      />
-      <Button
-        type="button"
-        className="mt-2 h-11 w-full text-[15px] font-bold"
-        disabled={tapCount < 3}
-        onClick={analyse}
-      >
-        Analyse
-      </Button>
-    </>
-  );
+  const band = result ? classify(result.twa, limitPpm).band : null;
 
   return (
     <div className="space-y-3.5">
@@ -199,9 +113,6 @@ export default function ScanPage() {
                 placeholder="e.g. MRPL-0142"
                 className="h-11"
               />
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Use a test ID like DEMO-01 when trying the demo.
-              </p>
             </div>
             <div>
               <Label htmlFor="hours" className="mb-1.5 block text-xs font-semibold text-muted-foreground">
@@ -222,124 +133,104 @@ export default function ScanPage() {
         </CardContent>
       </Card>
 
-      <ModeChooser mode={mode} onSelect={chooseMode} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            2 · Patch photo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+            See a sample wristband patch:
+          </Label>
+          <DemoButtons onSelect={pickDemo} limitPpm={limitPpm} />
 
-      {mode === "demo" && (
-        <Card>
-          <CardContent>
-            <p className="mb-3 text-sm">
-              <b>Demo mode.</b> These are computer-generated patch images that show what a worker&apos;s patch
-              looks like after a shift at three exposure levels. Pick one: the app places the three taps for
-              you. Press <b>Analyse</b> to see the full pipeline: colour change → dose (ppm·h) → 8-hour
-              average (TWA) → safety band.
-            </p>
-            <DemoButtons onSelect={loadDemo} limitPpm={limitPpm} />
-            {canvasAndAnalyse}
-          </CardContent>
-        </Card>
-      )}
+          <Label
+            htmlFor="file"
+            className="mt-3 flex cursor-pointer flex-col items-center gap-0.5 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-center text-sm text-muted-foreground"
+          >
+            <b className="flex items-center gap-1.5 text-primary">
+              <Camera className="size-4" strokeWidth={1.75} />
+              Or take a photo of your patch
+            </b>
+            <span className="text-xs">Camera opens on phones</span>
+          </Label>
+          <input
+            id="file"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={onFile}
+          />
 
-      {mode === "real" && (
-        <Card>
-          <CardContent>
-            {!imageUrl && (
-              <div className="mb-3 rounded-xl border bg-muted/30 p-3 text-sm">
-                <b className="mb-1.5 block">How to photograph the patch</b>
-                <ul className="space-y-1.5 text-xs text-muted-foreground">
-                  <li className="flex gap-2">
-                    <Layers className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
-                    <span>
-                      Put three things in <b>one</b> photo: the <b>white card</b>, the{" "}
-                      <b>sealed reference patch</b> (the unexposed control from the same batch), and the{" "}
-                      <b>worker&apos;s patch</b>.
-                    </span>
-                  </li>
-                  <li className="flex gap-2">
-                    <Sun className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
-                    <span>Lay them flat on a plain surface, in even indoor light.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <Ruler className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
-                    <span>
-                      Turn the flash <b>off</b> and avoid shadows and glare. Shoot straight down from about 20
-                      cm.
-                    </span>
-                  </li>
-                </ul>
+          {photo && (
+            <>
+              <div className="mt-3 overflow-hidden rounded-xl border bg-muted/30">
+                <Image
+                  data-testid="patch-photo"
+                  src={photo.url}
+                  alt={photo.kind === "demo" ? `Sample ${photo.level} patch` : "Your patch photo"}
+                  width={1024}
+                  height={1536}
+                  className="mx-auto max-h-[420px] w-auto object-contain"
+                />
               </div>
-            )}
-            <Label
-              htmlFor="file"
-              className="flex cursor-pointer flex-col items-center gap-0.5 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-center text-sm text-muted-foreground"
-            >
-              <b className="flex items-center gap-1.5 text-primary">
-                <Camera className="size-4" strokeWidth={1.75} />
-                Take photo or upload
-              </b>
-              <span className="text-xs">Camera opens on phones</span>
-            </Label>
-            <input
-              id="file"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={onFile}
-            />
-            {canvasAndAnalyse}
-          </CardContent>
-        </Card>
-      )}
+              {photo.kind === "demo" && (
+                <p className="mt-1.5 text-center text-xs text-muted-foreground">
+                  Left: worker&apos;s patch after the shift. Right: sealed reference patch.
+                </p>
+              )}
+              <Button type="button" className="mt-3 h-11 w-full text-[15px] font-bold" onClick={analyse}>
+                Analyse
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {result && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Result
-              </CardTitle>
-              {result.demo ? (
-                <span className="flex items-center gap-1.5">
-                  <Badge variant="secondary">Demo</Badge>
-                  <span className="text-xs text-muted-foreground">Simulated patch</span>
-                </span>
-              ) : (
-                !result.pending && <StatusPill band={band} />
-              )}
+              <span className="flex items-center gap-1.5">
+                <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  3 · Result
+                </CardTitle>
+                <Badge variant="secondary">Sample</Badge>
+              </span>
+              <StatusPill band={band} />
             </div>
           </CardHeader>
           <CardContent>
-            {result.pending ? (
-              <>
-                <CalibrationPendingCard
-                  dA={result.dA}
-                  channel={result.channel ?? cal.channel}
-                  onTryDemo={() => chooseMode("demo")}
-                  onScanAnother={clearScan}
-                />
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Measurement saved to records for {result.worker} (pending calibration).
-                </p>
-              </>
-            ) : (
-              <>
-                {result.demo && <StatusPill band={band} className="mb-2" />}
-                <ResultCard
-                  record={result}
-                  limitPpm={limitPpm}
-                  provisional={result.provisional}
-                  warning={warning}
-                />
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {result.demo
-                    ? "Demo result: generated image, not a real worker. Saved to records marked 'demo'."
-                    : `Saved to records for ${result.worker}.`}
-                </p>
-              </>
-            )}
+            <ResultCard record={result} limitPpm={limitPpm} provisional={false} />
+            <p className="mt-3 text-xs text-muted-foreground">
+              Sample result, not a real worker. Saved to records for {result.worker} (marked demo).
+            </p>
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={noModelOpen} onOpenChange={setNoModelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <FlaskConical className="size-7 text-primary" strokeWidth={1.75} />
+            <DialogTitle>No patch detected yet</DialogTitle>
+            <DialogDescription>
+              Thanks for trying AVARAN! The app is still in development. We&apos;re building the lab dataset
+              needed to train a precise model, so it can&apos;t estimate a ppm value from your own photos yet.
+              Photo readings are coming soon.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            In the meantime, tap <b>Safe</b>, <b>Caution</b> or <b>Over limit</b> to see how a reading works on
+            a real wristband patch.
+          </p>
+          <DialogFooter>
+            <DialogClose render={<Button className="h-11 w-full" />}>Got it</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

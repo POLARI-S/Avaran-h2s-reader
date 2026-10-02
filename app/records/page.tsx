@@ -41,20 +41,19 @@ export default function RecordsPage() {
     .filter((h) => h.worker.toLowerCase().includes(filter.trim().toLowerCase()));
 
   const exportCsv = () => {
-    const head = "time,worker,shift_h,dA,dose_ppm_h,twa_ppm,status,standard,demo,provisional,pending";
+    const head = "time,worker,shift_h,dA,dose_ppm_h,twa_ppm,status,standard,demo,provisional";
     const rows = history.map((h) =>
       [
         new Date(h.t).toISOString(),
         h.worker,
         h.hrs,
         h.dA,
-        h.pending ? "" : h.dose,
-        h.pending ? "" : h.twa,
-        h.pending ? "" : classify(h.twa, limitPpm).band,
+        h.dose,
+        h.twa,
+        classify(h.twa, limitPpm).band,
         h.standard,
         h.demo,
         h.provisional,
-        !!h.pending,
       ]
         .map(csvCell)
         .join(","),
@@ -126,16 +125,10 @@ export default function RecordsPage() {
                       {h.worker}
                       {h.demo && <span className="ml-1 text-xs text-muted-foreground">(demo)</span>}
                     </TableCell>
-                    <TableCell className="tabular-nums">{h.pending ? "—" : h.dose.toFixed(1)}</TableCell>
-                    <TableCell className="tabular-nums">{h.pending ? "—" : h.twa.toFixed(2)}</TableCell>
+                    <TableCell className="tabular-nums">{h.dose.toFixed(1)}</TableCell>
+                    <TableCell className="tabular-nums">{h.twa.toFixed(2)}</TableCell>
                     <TableCell>
-                      {h.pending ? (
-                        <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-bold tracking-wide whitespace-nowrap text-muted-foreground">
-                          Pending calibration
-                        </span>
-                      ) : (
-                        <StatusPill band={classify(h.twa, limitPpm).band} />
-                      )}
+                      <StatusPill band={classify(h.twa, limitPpm).band} />
                     </TableCell>
                   </TableRow>
                 ))}

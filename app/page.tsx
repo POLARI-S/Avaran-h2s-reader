@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
 import { ResultCard } from "@/components/ResultCard";
-import { CalibrationPendingCard } from "@/components/CalibrationPendingCard";
 import { HowItWorks } from "@/components/HowItWorks";
 import { BandLegend } from "@/components/BandLegend";
 import { loadHistory } from "@/lib/history";
@@ -34,8 +33,8 @@ export default function DashboardPage() {
   const limitPpm = STANDARDS[std].twa;
   const today = new Date().toDateString();
   const todays = history.filter((h) => new Date(h.t).toDateString() === today);
-  const overToday = todays.filter((h) => !h.pending && classify(h.twa, limitPpm).frac >= 1).length;
-  const band = last && !last.pending ? classify(last.twa, limitPpm).band : null;
+  const overToday = todays.filter((h) => classify(h.twa, limitPpm).frac >= 1).length;
+  const band = last ? classify(last.twa, limitPpm).band : null;
 
   return (
     <div className="space-y-3.5">
@@ -60,13 +59,7 @@ export default function DashboardPage() {
                 {new Date(last.t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
                 {last.demo ? " · demo" : ""}
               </p>
-              {last.pending ? (
-                <div className="mt-3">
-                  <CalibrationPendingCard dA={last.dA} channel={last.channel ?? "b"} compact />
-                </div>
-              ) : (
-                <ResultCard record={last} limitPpm={limitPpm} provisional={provisional} />
-              )}
+              <ResultCard record={last} limitPpm={limitPpm} provisional={provisional} />
             </div>
           )}
           <Button

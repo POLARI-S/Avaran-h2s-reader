@@ -12,18 +12,10 @@ const FORBIDDEN_STRINGS = [
 
 async function runDemo(page: Page, label: "Safe" | "Caution" | "Over limit") {
   await page.goto("/scan/");
-  await page.getByRole("button", { name: /Try a demo/ }).click();
   await page.getByRole("button", { name: new RegExp(`^${label}`) }).click();
-  await expect(page.getByTestId("tap-canvas")).toBeVisible();
+  await expect(page.getByTestId("patch-photo")).toBeVisible();
   await page.getByRole("button", { name: "Analyse" }).click();
   await expect(page.getByTestId("result-twa")).toBeVisible();
-}
-
-async function tapCanvasAt(page: Page, fx: number, fy: number) {
-  const canvas = page.getByTestId("tap-canvas");
-  const box = await canvas.boundingBox();
-  if (!box) throw new Error("canvas not visible");
-  await canvas.click({ position: { x: box.width * fx, y: box.height * fy } });
 }
 
 test.describe("Dashboard", () => {
@@ -35,6 +27,13 @@ test.describe("Dashboard", () => {
 });
 
 test.describe("Demo scans (default calibration, 8 h shift, ACGIH standard)", () => {
+  test.beforeEach(async ({ page }) => {
+    // These tests check numbers specific to the ACGIH standard (1 ppm limit),
+    // so pin it explicitly rather than relying on whichever standard the app
+    // defaults to.
+    await page.addInitScript(() => localStorage.setItem("avaran_std", JSON.stringify("acgih")));
+  });
+
   test("Safe demo gives TWA ~0.30 and a SAFE band", async ({ page }) => {
     await runDemo(page, "Safe");
     const twa = parseFloat((await page.getByTestId("result-twa").textContent()) ?? "0");
@@ -63,66 +62,25 @@ test.describe("Demo scans (default calibration, 8 h shift, ACGIH standard)", () 
   test("changing the shift to 4 h and re-running Safe still gives TWA ~0.30", async ({ page }) => {
     await page.goto("/scan/");
     await page.getByLabel("Shift length (h)").fill("4");
-    await page.getByRole("button", { name: /Try a demo/ }).click();
     await page.getByRole("button", { name: /^Safe/ }).click();
     await page.getByRole("button", { name: "Analyse" }).click();
     const twa = parseFloat((await page.getByTestId("result-twa").textContent()) ?? "0");
-    // At 4h the Safe demo targets a much smaller dose (1.2 ppm·h) than the default
-    // 8h case (2.4), so the reference/patch swatches differ by only ~2-3 sRGB units
-    // out of 255 — an 8-bit-canvas quantization limit, not a measurement-pipeline
-    // error (the underlying dose maths are exact to 1e-6, per lib/dose.test.ts).
-    // A wider tolerance reflects that reality rather than the ±0.05 used for the
-    // higher-contrast default-hours demos.
-    expect(twa).toBeGreaterThan(0.3 - 0.12);
-    expect(twa).toBeLessThan(0.3 + 0.12);
+    expect(twa).toBeGreaterThan(0.3 - 0.05);
+    expect(twa).toBeLessThan(0.3 + 0.05);
   });
 });
 
-test.describe("Scan modes", () => {
-  test("demo mode shows 'Demo result' and a SAFE pill", async ({ page }) => {
-    await runDemo(page, "Safe");
-    await expect(page.getByTestId("result-band")).toHaveText("SAFE");
-    await expect(page.getByText(/Demo result/)).toBeVisible();
-  });
-
-  test("real photo while provisional shows calibration-pending, no ppm result or band", async ({ page }) => {
+test.describe("Own photo", () => {
+  test("shows the in-development popup and no ppm result", async ({ page }) => {
     await page.goto("/scan/");
-    await page.getByRole("button", { name: /Scan a real patch/ }).click();
     await page.locator("#file").setInputFiles("tests/e2e/fixtures/real-sample.jpg");
-    await expect(page.getByTestId("tap-canvas")).toBeVisible();
-    await tapCanvasAt(page, 0.2, 0.25);
-    await tapCanvasAt(page, 0.5, 0.5);
-    await tapCanvasAt(page, 0.8, 0.75);
+    await expect(page.getByTestId("patch-photo")).toBeVisible();
     await page.getByRole("button", { name: "Analyse" }).click();
-
-    const card = page.getByTestId("calibration-pending");
-    await expect(card).toBeVisible();
-    await expect(card).toContainText(/calibration in progress/i);
-    await expect(card.getByText(/\d\s*ppm/i)).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toContainText(/no patch detected/i);
+    await expect(page.getByRole("dialog")).toContainText(/coming soon/i);
     await expect(page.getByTestId("result-twa")).toHaveCount(0);
-    await expect(page.getByTestId("result-band")).toHaveCount(0);
-    await expect(page.getByText(/^(SAFE|CAUTION|OVER LIMIT|HIGH)$/)).toHaveCount(0);
-
-    await page.goto("/records/");
-    await expect(page.getByText("Pending calibration")).toBeVisible();
-  });
-});
-
-test.describe("Tap order", () => {
-  test("worker patch tapped as step 2 shows the lighter-than-reference warning", async ({ page }) => {
-    await page.goto("/scan/");
-    await page.getByRole("button", { name: /Try a demo/ }).click();
-    await page.getByRole("button", { name: /^Safe/ }).click();
-    await expect(page.getByTestId("tap-canvas")).toBeVisible();
-    await page.getByRole("button", { name: "Redo taps" }).click();
-
-    // Demo image layout (1200x800 canvas): white card ~(240,250), reference ~(960,250), worker patch ~(600,580).
-    await tapCanvasAt(page, 240 / 1200, 250 / 800); // 1: white card (correct)
-    await tapCanvasAt(page, 600 / 1200, 580 / 800); // 2: worker patch (wrong — should be reference)
-    await tapCanvasAt(page, 960 / 1200, 250 / 800); // 3: reference (wrong — should be worker patch)
-
-    await page.getByRole("button", { name: "Analyse" }).click();
-    await expect(page.getByTestId("result-warning")).toContainText(/less change than the reference/i);
+    await page.getByRole("button", { name: "Got it" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 });
 
@@ -142,7 +100,7 @@ test.describe("Records", () => {
     const fs = await import("node:fs/promises");
     const content = await fs.readFile(streamPath!, "utf-8");
     expect(content.split("\n")[0]).toBe(
-      "time,worker,shift_h,dA,dose_ppm_h,twa_ppm,status,standard,demo,provisional,pending",
+      "time,worker,shift_h,dA,dose_ppm_h,twa_ppm,status,standard,demo,provisional",
     );
     await page.screenshot({ path: "docs/screens/records.png" });
   });
