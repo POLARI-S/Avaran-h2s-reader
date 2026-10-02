@@ -17,7 +17,10 @@ const WHITE_RGB: [number, number, number] = [238, 238, 234];
 const REFERENCE_RGB: [number, number, number] = [201, 146, 58];
 
 // Fraction of the current standard's limit each demo level targets.
-const LEVEL_FRACTION: Record<DemoLevel, number> = { safe: 0.3, caution: 0.8, over: 1.5 };
+export const LEVEL_FRACTION: Record<DemoLevel, number> = { safe: 0.3, caution: 0.8, over: 1.5 };
+
+/** Target 8-h TWA (ppm) a demo level aims for under the given limit. */
+export const demoTargetTwa = (level: DemoLevel, limitPpm: number): number => LEVEL_FRACTION[level] * limitPpm;
 
 /**
  * Generates a synthetic cartridge photo by running the CURRENT calibration
@@ -31,7 +34,7 @@ export function generateDemoImage(
   shiftHours: number,
   cal: Calibration,
 ): DemoImage {
-  const targetTwa = LEVEL_FRACTION[level] * limitPpm;
+  const targetTwa = demoTargetTwa(level, limitPpm);
   const targetDose = targetTwa * shiftHours;
   const dA = darkeningFromDose(targetDose, cal);
 

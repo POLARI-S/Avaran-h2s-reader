@@ -18,19 +18,7 @@ import {
   validateCalibrationInput,
 } from "@/lib/calibration";
 import { loadBoxPct, loadStandard, saveBoxPct, saveStandard } from "@/lib/settings";
-
-const CHANNEL_LABELS: Record<Channel, string> = {
-  r: "Red (darkening)",
-  g: "Green (darkening)",
-  b: "Blue (darkening)",
-  l: "Luminance (darkening)",
-  kr: "Red (Kubelka-Munk)",
-  kg: "Green (Kubelka-Munk)",
-  kb: "Blue (Kubelka-Munk)",
-  kl: "Luminance (Kubelka-Munk)",
-  y: "Yellowness loss (Δb*)",
-  e: "Total colour change (ΔE)",
-};
+import { CHANNEL_LABELS } from "@/lib/channels";
 
 export default function SetupPage() {
   const [loaded, setLoaded] = useState(false);
@@ -219,6 +207,10 @@ export default function SetupPage() {
             <Switch checked={provisional} onCheckedChange={setProvisional} />
             Mark readings as provisional
           </label>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            While on, real-photo scans show the measured colour change only (no ppm). Turn off only after lab
+            validation.
+          </p>
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             <Button className="h-11" onClick={onSaveCal}>
               Save calibration

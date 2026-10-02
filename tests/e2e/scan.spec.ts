@@ -12,7 +12,8 @@ const FORBIDDEN_STRINGS = [
 
 async function runDemo(page: Page, label: "Safe" | "Caution" | "Over limit") {
   await page.goto("/scan/");
-  await page.getByRole("button", { name: label, exact: true }).click();
+  await page.getByRole("button", { name: /Try a demo/ }).click();
+  await page.getByRole("button", { name: new RegExp(`^${label}`) }).click();
   await expect(page.getByTestId("tap-canvas")).toBeVisible();
   await page.getByRole("button", { name: "Analyse" }).click();
   await expect(page.getByTestId("result-twa")).toBeVisible();
@@ -62,7 +63,8 @@ test.describe("Demo scans (default calibration, 8 h shift, ACGIH standard)", () 
   test("changing the shift to 4 h and re-running Safe still gives TWA ~0.30", async ({ page }) => {
     await page.goto("/scan/");
     await page.getByLabel("Shift length (h)").fill("4");
-    await page.getByRole("button", { name: "Safe", exact: true }).click();
+    await page.getByRole("button", { name: /Try a demo/ }).click();
+    await page.getByRole("button", { name: /^Safe/ }).click();
     await page.getByRole("button", { name: "Analyse" }).click();
     const twa = parseFloat((await page.getByTestId("result-twa").textContent()) ?? "0");
     // At 4h the Safe demo targets a much smaller dose (1.2 ppm·h) than the default
@@ -76,10 +78,41 @@ test.describe("Demo scans (default calibration, 8 h shift, ACGIH standard)", () 
   });
 });
 
+test.describe("Scan modes", () => {
+  test("demo mode shows 'Demo result' and a SAFE pill", async ({ page }) => {
+    await runDemo(page, "Safe");
+    await expect(page.getByTestId("result-band")).toHaveText("SAFE");
+    await expect(page.getByText(/Demo result/)).toBeVisible();
+  });
+
+  test("real photo while provisional shows calibration-pending, no ppm result or band", async ({ page }) => {
+    await page.goto("/scan/");
+    await page.getByRole("button", { name: /Scan a real patch/ }).click();
+    await page.locator("#file").setInputFiles("tests/e2e/fixtures/real-sample.jpg");
+    await expect(page.getByTestId("tap-canvas")).toBeVisible();
+    await tapCanvasAt(page, 0.2, 0.25);
+    await tapCanvasAt(page, 0.5, 0.5);
+    await tapCanvasAt(page, 0.8, 0.75);
+    await page.getByRole("button", { name: "Analyse" }).click();
+
+    const card = page.getByTestId("calibration-pending");
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(/calibration in progress/i);
+    await expect(card.getByText(/\d\s*ppm/i)).toHaveCount(0);
+    await expect(page.getByTestId("result-twa")).toHaveCount(0);
+    await expect(page.getByTestId("result-band")).toHaveCount(0);
+    await expect(page.getByText(/^(SAFE|CAUTION|OVER LIMIT|HIGH)$/)).toHaveCount(0);
+
+    await page.goto("/records/");
+    await expect(page.getByText("Pending calibration")).toBeVisible();
+  });
+});
+
 test.describe("Tap order", () => {
   test("worker patch tapped as step 2 shows the lighter-than-reference warning", async ({ page }) => {
     await page.goto("/scan/");
-    await page.getByRole("button", { name: "Safe", exact: true }).click();
+    await page.getByRole("button", { name: /Try a demo/ }).click();
+    await page.getByRole("button", { name: /^Safe/ }).click();
     await expect(page.getByTestId("tap-canvas")).toBeVisible();
     await page.getByRole("button", { name: "Redo taps" }).click();
 
@@ -109,7 +142,7 @@ test.describe("Records", () => {
     const fs = await import("node:fs/promises");
     const content = await fs.readFile(streamPath!, "utf-8");
     expect(content.split("\n")[0]).toBe(
-      "time,worker,shift_h,dA,dose_ppm_h,twa_ppm,status,standard,demo,provisional",
+      "time,worker,shift_h,dA,dose_ppm_h,twa_ppm,status,standard,demo,provisional,pending",
     );
     await page.screenshot({ path: "docs/screens/records.png" });
   });
