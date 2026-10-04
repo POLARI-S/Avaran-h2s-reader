@@ -244,6 +244,97 @@ label.glass-fill:hover {
   box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.9), 0 0 0 2px var(--primary), 0 6px 16px -8px oklch(0.45 0.18 265 / 0.5);
 }
 
+/* ---- Liquid glass lens: the sliding tab selection (iOS-style) ----
+   Looks: a faintly tinted body with a clear centre and edges that darken the
+   way a real lens bends light, a glossy highlight on the upper half, a
+   light-catching rim, and a caustic glow along the bottom edge.
+   Behaves: stretches while it travels and wobbles back to round when it
+   lands (.is-moving), swells when pressed ([data-pressed]); --lx / --la move
+   the light with the pointer. No drop shadow. */
+@property --lx {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 30%;
+}
+@property --la {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 125deg;
+}
+.liquid-lens {
+  --lx: 30%;
+  --la: 125deg;
+  --sx: 1.14;
+  scale: 1;
+  /* Clear body: no overall tint, only a faint lensing band at the very edge.
+     Shine comes from a crisp specular streak plus a small secondary glint. */
+  background:
+    radial-gradient(38% 30% at var(--lx) 24%, oklch(1 0 0 / 0.95), oklch(1 0 0 / 0.35) 45%, oklch(1 0 0 / 0) 70%),
+    radial-gradient(16% 18% at calc(106% - var(--lx)) 76%, oklch(1 0 0 / 0.7), oklch(1 0 0 / 0) 70%),
+    radial-gradient(120% 150% at 50% 50%, oklch(0.5 0.05 265 / 0) 55%, oklch(0.5 0.06 265 / 0.09) 100%);
+  -webkit-backdrop-filter: blur(0.6px) saturate(170%) brightness(1.05);
+  backdrop-filter: blur(0.6px) saturate(170%) brightness(1.05);
+  /* Hairline edge, a thin lensing band, then crisp thickness: lit above, shaded below. */
+  box-shadow:
+    inset 0 0 0 0.5px oklch(0.35 0.04 265 / 0.28),
+    inset 0 0 5px 0.5px oklch(0.45 0.08 265 / 0.14),
+    inset 0 1.5px 1px -0.5px oklch(1 0 0),
+    inset 0 -1.5px 2px -0.5px oklch(0.35 0.04 265 / 0.1);
+  /* Position uses the standalone translate property, which CSS applies after
+     scale, so stretching never multiplies the travel distance. It also uses the
+     no-overshoot spring so the lens never sails past the end tabs; the wobble
+     lives only in its shape (scale). */
+  transition-property: translate, scale, --lx, --la;
+  transition-duration: var(--dur-spring), 620ms, 450ms, 450ms;
+  transition-timing-function: var(--ease-spring), var(--ease-bounce), var(--ease-spring), var(--ease-spring);
+}
+/* Stretch grows backward from the leading edge, like a droplet's tail, so it
+   never extends beyond the tab it is heading to. */
+.liquid-lens[data-dir="right"] {
+  transform-origin: right center;
+}
+.liquid-lens[data-dir="left"] {
+  transform-origin: left center;
+}
+/* Pressed: the droplet swells under the finger. */
+.liquid-lens[data-pressed="true"] {
+  scale: 1.06 1.14;
+}
+/* Travelling: stretched along the direction of motion, flattened across it.
+   Removing the class lets the bouncy spring wobble it back to round. */
+.liquid-lens.is-moving {
+  scale: var(--sx) calc(2 - var(--sx));
+  transition-duration: var(--dur-spring), 160ms, 450ms, 450ms;
+  transition-timing-function: var(--ease-spring), ease-out, var(--ease-spring), var(--ease-spring);
+}
+.liquid-lens::before,
+.liquid-lens::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* The rim: a gradient drawn only in a thin border ring (mask trick). */
+.liquid-lens::before {
+  padding: 1.75px;
+  background: linear-gradient(
+    var(--la),
+    oklch(1 0 0) 0%,
+    oklch(1 0 0 / 0.55) 22%,
+    oklch(1 0 0 / 0.08) 50%,
+    oklch(1 0 0 / 0.55) 78%,
+    oklch(1 0 0) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+/* Caustic: light focused through the glass onto its lower edge. */
+.liquid-lens::after {
+  background: radial-gradient(45% 40% at calc(100% - var(--lx)) 100%, oklch(1 0 0 / 0.85), transparent 70%);
+}
+
 /* ---- Tinted glass: the primary action ---- */
 /* A gentle tint, not a slab: shallow gradient, one soft highlight, no outline. */
 [data-slot="button"].bg-primary {
@@ -337,6 +428,11 @@ label.glass-fill:hover {
   .stagger > * {
     animation: fade-only 180ms ease both !important;
   }
+  .liquid-lens,
+  .liquid-lens.is-moving,
+  .liquid-lens[data-pressed="true"] {
+    scale: 1;
+  }
   :where(button, [role="tab"], a[role="button"], label.cursor-pointer):not(:disabled):active {
     transform: none;
   }
@@ -346,6 +442,11 @@ label.glass-fill:hover {
   to { opacity: 1; }
 }
 @media (prefers-reduced-transparency: reduce) {
+  .liquid-lens {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   .material,
   [data-slot="card"],
   [data-slot="dialog-content"],
@@ -367,6 +468,12 @@ label.glass-fill:hover {
 @media (prefers-contrast: more) {
   body::before {
     display: none;
+  }
+  .liquid-lens {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    outline: 1px solid var(--foreground);
   }
   .material,
   [data-slot="card"],
