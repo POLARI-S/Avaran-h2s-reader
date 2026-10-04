@@ -29,7 +29,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#1d4ed8",
+  // Light, glass-tinted chrome so the browser bar blends into the page.
+  themeColor: "#e9eefb",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -41,18 +43,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ServiceWorkerRegister />
-        <div className="mx-auto max-w-[560px] px-4 pt-3 pb-24">
-          <header className="flex items-center gap-3 py-1.5 pb-3">
-            <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-[15px] font-extrabold tracking-tight text-primary-foreground">
+        <div className="mx-auto max-w-[560px] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(6rem,env(safe-area-inset-bottom))]">
+          <header className="flex items-center gap-3 py-2 pb-3.5">
+            <div className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-gradient-to-b from-[oklch(0.55_0.19_265)] to-primary text-[15px] font-extrabold tracking-tight text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.28),0_4px_12px_-4px_oklch(0.45_0.18_265/0.55)]">
               H₂S
             </div>
             <div>
-              <h1 className="text-lg leading-tight font-bold">H₂S Dose Reader</h1>
-              <p className="text-[12.5px] text-muted-foreground">Passive H₂S dosimeter · Team AVARAN</p>
+              <h1 className="text-[19px] leading-tight font-bold tracking-[-0.022em]">H₂S Dose Reader</h1>
+              <p className="text-[12.5px] leading-snug text-muted-foreground">Passive H₂S dosimeter · Team AVARAN</p>
             </div>
           </header>
           <NavTabs />
-          <main className="pt-3 pb-4">{children}</main>
+          <main className="pt-4 pb-4">{children}</main>
           <Footer />
         </div>
       </body>

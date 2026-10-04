@@ -30,8 +30,8 @@ export function DemoButtons({
           disabled={disabled}
           onClick={() => onSelect(l.level)}
           className={cn(
-            "h-auto flex-col gap-0 py-2",
-            selected === l.level && "border-primary bg-primary/10 ring-2 ring-primary",
+            "h-auto flex-col gap-0.5 rounded-xl py-2.5",
+            selected === l.level && "border-primary bg-primary/10 text-primary ring-2 ring-primary",
           )}
         >
           <span>{l.label}</span>

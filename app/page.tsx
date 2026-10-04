@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const band = last ? classify(last.twa, limitPpm).band : null;
 
   return (
-    <div className="space-y-3.5">
+    <div className="stagger space-y-3.5">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -65,7 +65,7 @@ export default function DashboardPage() {
           <Button
             render={<Link href="/scan/" />}
             nativeButton={false}
-            className="mt-3.5 h-11 w-full text-[15px] font-bold"
+            className="mt-3.5 h-11 w-full text-[15px] font-semibold"
           >
             <Camera className="size-4" strokeWidth={1.75} />
             Scan a patch
@@ -81,13 +81,13 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
-              <b className="block text-[22px] tabular-nums">{todays.length}</b>
+            <div className="glass-fill rounded-2xl p-3 text-center">
+              <b className="block text-[26px] leading-tight font-bold tracking-[-0.02em] tabular-nums">{todays.length}</b>
               <span className="text-xs text-muted-foreground">patches scanned</span>
             </div>
-            <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
+            <div className="glass-fill rounded-2xl p-3 text-center">
               <b
-                className="block text-[22px] tabular-nums"
+                className="block text-[26px] leading-tight font-bold tracking-[-0.02em] tabular-nums transition-colors duration-300"
                 style={overToday > 0 ? { color: BAND_META["OVER LIMIT"].color } : undefined}
               >
                 {overToday}

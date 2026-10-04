@@ -121,7 +121,264 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
   body {
     @apply bg-background text-foreground font-sans;
+    -webkit-tap-highlight-color: transparent;
+    font-optical-sizing: auto;
+    min-height: 100dvh;
+  }
+  /* The field behind the glass: static colour pools (no looping motion).
+     All four share one lightness, chroma, opacity and size, and sit in
+     mirrored corner positions, so each tints the cards equally; only the
+     hue differs. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    --pool: 50% 40%;
+    --pool-l: 0.86;
+    --pool-c: 0.06;
+    --pool-a: 0.45;
+    background:
+      radial-gradient(var(--pool) at 6% 6%, oklch(var(--pool-l) var(--pool-c) 265 / var(--pool-a)), transparent 70%),
+      radial-gradient(var(--pool) at 94% 6%, oklch(var(--pool-l) var(--pool-c) 200 / var(--pool-a)), transparent 70%),
+      radial-gradient(var(--pool) at 94% 94%, oklch(var(--pool-l) var(--pool-c) 85 / var(--pool-a)), transparent 70%),
+      radial-gradient(var(--pool) at 6% 94%, oklch(var(--pool-l) var(--pool-c) 300 / var(--pool-a)), transparent 70%),
+      var(--background);
+  }
+  /* Optical tracking: tighten as type grows, open up slightly when small. */
+  h1,
+  h2 {
+    letter-spacing: -0.022em;
+  }
+  button,
+  a,
+  label,
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+  ::selection {
+    background: oklch(0.45 0.18 265 / 0.2);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Motion tokens: springs expressed as CSS linear() easings.
+   --ease-spring  : damping 1.0, response 0.4  (default, no overshoot)
+   --ease-bounce  : damping 0.8, response 0.4  (only for momentum-like moments)
+   ------------------------------------------------------------------ */
+:root {
+  --ease-spring: linear(0, 0.0883, 0.2596, 0.4358, 0.5871, 0.7062, 0.7951, 0.8594, 0.9046, 0.936, 0.9574, 0.9718, 0.9815, 0.9879, 0.9921, 0.9949, 0.9967, 0.9979, 0.9986, 0.9991, 0.9994, 0.9996, 0.9998, 0.9999, 1);
+  --ease-bounce: linear(0, 0.0934, 0.2855, 0.4907, 0.668, 0.8032, 0.8971, 0.9567, 0.9909, 1.008, 1.0144, 1.0149, 1.0127, 1.0096, 1.0066, 1.0041, 1.0024, 1.0011, 1.0004, 1, 0.9998, 0.9998, 0.9999, 1);
+  --dur-spring: 560ms;
+  --dur-press: 110ms;
+  /* Liquid glass. Surfaces blur what is behind them; fills sit on a surface
+     and never blur again (glass on glass loses legibility). */
+  --glass-surface: linear-gradient(165deg, oklch(1 0 0 / 0.74) 0%, oklch(1 0 0 / 0.52) 55%, oklch(1 0 0 / 0.6) 100%);
+  --glass-blur: blur(24px) saturate(185%);
+  --glass-edge: inset 0 1px 0 oklch(1 0 0 / 0.95), inset 0 -1px 0 oklch(1 0 0 / 0.35),
+    0 0 0 1px oklch(1 0 0 / 0.6), 0 0 0 1.5px oklch(0.45 0.08 265 / 0.08);
+  --glass-shadow: 0 1px 2px oklch(0.25 0.05 265 / 0.06), 0 14px 36px -14px oklch(0.3 0.08 265 / 0.28);
+  --glass-fill: linear-gradient(180deg, oklch(1 0 0 / 0.78), oklch(1 0 0 / 0.55));
+  --glass-fill-hover: linear-gradient(180deg, oklch(1 0 0 / 0.92), oklch(1 0 0 / 0.7));
+  --glass-fill-edge: inset 0 1px 0 oklch(1 0 0 / 0.9), 0 0 0 1px oklch(0.45 0.06 265 / 0.12),
+    0 1px 2px oklch(0.25 0.05 265 / 0.06);
+}
+
+/* ---- Glass surfaces: nav, cards, dialogs, menus ---- */
+.material,
+[data-slot="card"],
+[data-slot="dialog-content"],
+[data-slot="select-content"] {
+  background: var(--glass-surface);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 0;
+  box-shadow: var(--glass-edge), var(--glass-shadow);
+}
+/* Bigger, modal surfaces read as thicker glass */
+[data-slot="dialog-content"] {
+  --glass-blur: blur(40px) saturate(190%);
+  background: linear-gradient(165deg, oklch(1 0 0 / 0.86), oklch(1 0 0 / 0.7));
+  box-shadow: var(--glass-edge), 0 30px 70px -20px oklch(0.25 0.08 265 / 0.5);
+}
+[data-slot="dialog-footer"] {
+  background: oklch(1 0 0 / 0.35);
+  border-color: oklch(1 0 0 / 0.6);
+}
+[data-slot="select-content"] {
+  --glass-blur: blur(30px) saturate(190%);
+  /* menus carry text over other text, so they stay nearly opaque */
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.94), oklch(1 0 0 / 0.88));
+}
+
+/* ---- Glass fills: controls that sit on a surface ---- */
+[data-slot="input"],
+[data-slot="select-trigger"],
+.glass-fill,
+[data-slot="button"]:is([class*="border-border"], [class*="bg-secondary"]) {
+  background: var(--glass-fill);
+  border-color: transparent;
+  box-shadow: var(--glass-fill-edge);
+}
+[data-slot="button"]:is([class*="border-border"], [class*="bg-secondary"]):not(:disabled):hover,
+[data-slot="select-trigger"]:hover,
+label.glass-fill:hover {
+  background: var(--glass-fill-hover);
+}
+[data-slot="input"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible {
+  background: oklch(1 0 0 / 0.92);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.9), 0 0 0 1px var(--ring), 0 0 0 4px oklch(0.45 0.18 265 / 0.18);
+}
+/* Selected sample stays clearly tinted */
+[data-slot="button"][aria-pressed="true"] {
+  background: linear-gradient(180deg, oklch(0.95 0.04 265 / 0.95), oklch(0.9 0.06 265 / 0.8));
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.9), 0 0 0 2px var(--primary), 0 6px 16px -8px oklch(0.45 0.18 265 / 0.5);
+}
+
+/* ---- Tinted glass: the primary action ---- */
+/* A gentle tint, not a slab: shallow gradient, one soft highlight, no outline. */
+[data-slot="button"].bg-primary {
+  background: linear-gradient(180deg, oklch(0.56 0.18 265), oklch(0.5 0.185 265));
+  background-clip: border-box;
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.2), 0 1px 2px oklch(0.3 0.1 265 / 0.2),
+    0 4px 12px -6px oklch(0.45 0.18 265 / 0.4);
+  letter-spacing: -0.005em;
+}
+[data-slot="button"].bg-primary:not(:disabled):hover {
+  background: linear-gradient(180deg, oklch(0.59 0.18 265), oklch(0.53 0.185 265));
+}
+[data-slot="button"].bg-primary:disabled {
+  box-shadow: none;
+}
+
+/* Press feedback: instant on pointer-down, springs back on release */
+:where(button, [role="tab"], a[role="button"], label.cursor-pointer):not(:disabled) {
+  transition-property: transform, background-color, color, box-shadow, border-color, opacity;
+  transition-duration: var(--dur-spring), 160ms, 160ms, 160ms, 160ms, 160ms;
+  transition-timing-function: var(--ease-spring), ease-out, ease-out, ease-out, ease-out, ease-out;
+}
+:where(button, [role="tab"], a[role="button"], label.cursor-pointer):not(:disabled):active {
+  transform: scale(0.97);
+  transition-duration: var(--dur-press), 100ms, 100ms, 100ms, 100ms, 100ms;
+  transition-timing-function: ease-out;
+}
+
+/* Content arrives from below, with a hint of the spring */
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Staggered arrival for card stacks */
+.stagger > * {
+  animation: content-in var(--dur-spring) var(--ease-spring) both;
+}
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 90ms; }
+.stagger > *:nth-child(4) { animation-delay: 135ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+
+/* Result number settles in */
+@keyframes value-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.value-in {
+  animation: value-in 620ms var(--ease-bounce) both;
+}
+
+/* Bar fills from zero to its value */
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 760ms var(--ease-spring) 120ms both;
+}
+
+/* Accessibility: three independent user preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .stagger > * {
+    animation: fade-only 180ms ease both !important;
+  }
+  :where(button, [role="tab"], a[role="button"], label.cursor-pointer):not(:disabled):active {
+    transform: none;
+  }
+}
+@keyframes fade-only {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .material,
+  [data-slot="card"],
+  [data-slot="dialog-content"],
+  [data-slot="select-content"] {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  [data-slot="input"],
+  [data-slot="select-trigger"],
+  .glass-fill {
+    background: var(--card);
+  }
+  [data-slot="dialog-overlay"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+@media (prefers-contrast: more) {
+  body::before {
+    display: none;
+  }
+  .material,
+  [data-slot="card"],
+  [data-slot="dialog-content"],
+  [data-slot="select-content"],
+  [data-slot="input"],
+  [data-slot="select-trigger"],
+  .glass-fill {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    outline: 1px solid var(--foreground);
   }
 }

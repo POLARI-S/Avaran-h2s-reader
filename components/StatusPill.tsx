@@ -17,7 +17,7 @@ export function StatusPill({ band, className }: { band: Band | null; className?:
   const meta = BAND_META[band];
   return (
     <span
-      className={cn("inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide", className)}
+      className={cn("inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-[0.06em] transition-colors duration-300", className)}
       style={{ backgroundColor: meta.softColor, color: meta.color }}
     >
       {band}

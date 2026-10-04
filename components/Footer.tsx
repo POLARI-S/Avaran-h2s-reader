@@ -11,7 +11,7 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="py-6 text-center text-[11px] text-muted-foreground">
+    <footer className="py-6 text-center text-[11px] tracking-[0.02em] text-muted-foreground">
       Team AVARAN · SIH26118{provisional ? " · Provisional calibration" : ""}
     </footer>
   );

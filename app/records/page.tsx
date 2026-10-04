@@ -73,14 +73,20 @@ export default function RecordsPage() {
   };
 
   return (
-    <div className="space-y-3.5">
+    <div className="stagger space-y-3.5">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Scan records
             </CardTitle>
-            <Button variant="secondary" size="sm" onClick={exportCsv} disabled={history.length === 0}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={exportCsv}
+              disabled={history.length === 0}
+              className="relative px-3 after:absolute after:-inset-x-1 after:-inset-y-2 after:content-['']"
+            >
               Export CSV
             </Button>
           </div>
@@ -103,32 +109,33 @@ export default function RecordsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Time</TableHead>
                   <TableHead>Worker</TableHead>
-                  <TableHead>Dose</TableHead>
-                  <TableHead>TWA</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">TWA · status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((h) => (
                   <TableRow key={h.id}>
-                    <TableCell>
-                      {new Date(h.t).toLocaleString([], {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                    {/* Two columns so every row fits a phone: details on the left, the verdict on the right. */}
+                    <TableCell className="w-full max-w-0 py-3 whitespace-normal">
+                      <span className="block truncate font-medium">{h.worker}</span>
+                      <span className="block text-xs leading-relaxed text-muted-foreground">
+                        {new Date(h.t).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {" · "}
+                        <span className="whitespace-nowrap tabular-nums">{h.dose.toFixed(1)} ppm·h</span>
+                        {h.demo && " · demo"}
+                      </span>
                     </TableCell>
-                    <TableCell>
-                      {h.worker}
-                      {h.demo && <span className="ml-1 text-xs text-muted-foreground">(demo)</span>}
-                    </TableCell>
-                    <TableCell className="tabular-nums">{h.dose.toFixed(1)}</TableCell>
-                    <TableCell className="tabular-nums">{h.twa.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <StatusPill band={classify(h.twa, limitPpm).band} />
+                    <TableCell className="py-3 text-right">
+                      <span className="block text-[15px] font-semibold tabular-nums">
+                        {h.twa.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">ppm</span>
+                      </span>
+                      <StatusPill band={classify(h.twa, limitPpm).band} className="mt-1 px-2.5 py-0.5 text-[11px]" />
                     </TableCell>
                   </TableRow>
                 ))}

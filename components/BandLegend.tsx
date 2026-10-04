@@ -30,11 +30,11 @@ export function BandLegend({ limitPpm, standardLabel }: { limitPpm: number; stan
             <div
               key={row.band}
               data-testid={`legend-${row.band.toLowerCase().replace(/\s+/g, "-")}`}
-              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-xl px-3.5 py-3"
               style={{ backgroundColor: meta.softColor }}
             >
               <div>
-                <b style={{ color: meta.color }} className="text-sm font-bold">
+                <b style={{ color: meta.color }} className="text-sm font-bold tracking-[0.04em]">
                   {row.band}
                 </b>
                 <p className="text-xs text-muted-foreground">{row.desc}</p>

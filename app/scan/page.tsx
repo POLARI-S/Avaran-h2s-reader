@@ -93,7 +93,7 @@ export default function ScanPage() {
   const band = result ? classify(result.twa, limitPpm).band : null;
 
   return (
-    <div className="space-y-3.5">
+    <div className="stagger space-y-3.5">
       <Card>
         <CardHeader>
           <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -151,7 +151,7 @@ export default function ScanPage() {
 
           <Label
             htmlFor="file"
-            className="mt-3 flex cursor-pointer flex-col items-center gap-0.5 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-4 text-center text-sm text-muted-foreground"
+            className="mt-3 flex cursor-pointer flex-col items-center gap-0.5 rounded-2xl border-2 border-dashed border-primary/35 bg-white/45 px-4 py-4 text-center text-sm text-muted-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.9)] hover:border-primary/55 hover:bg-white/70"
           >
             <b className="flex items-center gap-1.5 text-primary">
               <Camera className="size-4" strokeWidth={1.75} />
@@ -170,7 +170,7 @@ export default function ScanPage() {
 
           {photo && (
             <>
-              <div className="mt-3 overflow-hidden rounded-xl border bg-muted/30">
+              <div className="glass-fill mt-3 overflow-hidden rounded-2xl">
                 <Image
                   data-testid="patch-photo"
                   src={photo.url}
@@ -185,7 +185,7 @@ export default function ScanPage() {
                   Left: worker&apos;s patch after the shift. Right: sealed reference patch.
                 </p>
               )}
-              <Button type="button" className="mt-3 h-11 w-full text-[15px] font-bold" onClick={analyse}>
+              <Button type="button" className="mt-3 h-11 w-full text-[15px] font-semibold" onClick={analyse}>
                 Analyse
               </Button>
             </>

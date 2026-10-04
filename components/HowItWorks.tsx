@@ -52,7 +52,7 @@ export function HowItWorks() {
           </Fragment>
         ))}
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
         The wristband has <b>no battery and no electronics</b>. It records the <b>total H₂S dose</b> over
         the shift, not a live reading. Silver nanoparticles in the PVA film react with H₂S to form silver
         sulfide (2Ag + H₂S → Ag₂S), so the film loses its yellow colour and turns grey. The bigger the

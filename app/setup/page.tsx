@@ -97,7 +97,7 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="space-y-3.5">
+    <div className="stagger space-y-3.5">
       <Card>
         <CardHeader>
           <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -133,7 +133,7 @@ export default function SetupPage() {
         <CardContent>
           <p className="mb-2 text-xs text-muted-foreground">
             From the lab fit: ΔA = A · (1 − e<sup>−k·D</sup>). Paste the two numbers from{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-[12.5px]">model_params.json</code>, or import the
+            <code className="rounded bg-white/60 px-1 py-0.5 text-[12.5px]">model_params.json</code>, or import the
             file. ΔA is whichever colour measure the lab fit chose (e.g. yellowness loss).
           </p>
           <div className="grid grid-cols-2 gap-2.5">
@@ -204,7 +204,7 @@ export default function SetupPage() {
             </Button>
             <Label
               htmlFor="jsonIn"
-              className="flex h-11 cursor-pointer items-center justify-center rounded-lg bg-accent text-sm font-semibold text-accent-foreground"
+              className="glass-fill flex h-11 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold text-primary"
             >
               Import JSON
             </Label>
